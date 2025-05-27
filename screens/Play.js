@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, SafeAreaView, StatusBar } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
-import { InterstitialAd, AdEventType } from "react-native-google-mobile-ads";
+import { InterstitialAd, AdEventType, BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import * as Constants from "../constants/Constants";
+import AdManager from '../utils/AdManager';
+import { ADMOB_IDS } from '../constants/Constants';
 
 const interstitial = InterstitialAd.createForAdRequest(Constants.ADMOB_INTERSTITIAL_ID, {
   requestNonPersonalizedAdsOnly: false,
@@ -27,6 +29,13 @@ export function Play({ route }) {
     interstitial.load();
 
     return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    // Show interstitial when leaving game
+    return () => {
+      AdManager.showInterstitial();
+    };
   }, []);
 
   useEffect(() => {
@@ -72,6 +81,19 @@ export function Play({ route }) {
   }
 
   return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#000" barStyle="light-content" />
+      
+      <View style={styles.bannerContainer}>
+        <BannerAd
+          unitId={ADMOB_IDS.BANNER}
+          size={BannerAdSize.BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+        />
+      </View>
+
       <View style={[styles.container, isFullScreen && styles.fullScreen]}>
         {!isFullScreen && (
             <View style={styles.header}>
@@ -116,6 +138,7 @@ export function Play({ route }) {
             </View>
         )}
       </View>
+    </SafeAreaView>
   );
 }
 
@@ -182,4 +205,9 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, color: "red", textAlign: "center", marginBottom: 20 },
   backButton: { backgroundColor: "#4e73df", padding: 15, borderRadius: 10 },
   backButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  bannerContainer: {
+    alignItems: 'center',
+    backgroundColor: '#000',
+    padding: 5,
+  },
 });
