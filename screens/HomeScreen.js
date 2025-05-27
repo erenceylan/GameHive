@@ -19,6 +19,9 @@ import BottomTabBar from "../components/BottomTabBar";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { addToFavorites, removeFromFavorites, isFavorite, getFavorites } from "../utils/storage";
+import AdManager from '../utils/AdManager';
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { ADMOB_IDS } from '../constants/Constants';
 
 export function HomeScreen() {
   const navigation = useNavigation();
@@ -57,8 +60,12 @@ export function HomeScreen() {
   useEffect(() => {
     fetchGames(currentPage);
   }, [currentPage]);
+
+  useEffect(() => {
+    // Reset ad session when returning to home
+    AdManager.resetSession();
+  }, []);
   
-  // Get favorite games whenever the page is focused
   useFocusEffect(
     useCallback(() => {
       const loadFavorites = async () => {
@@ -76,7 +83,6 @@ export function HomeScreen() {
     fetchGames(1);
   };
 
-  // Stylish header component
   const renderHeader = () => {
     return (
       <View style={styles.header}>
@@ -102,19 +108,15 @@ export function HomeScreen() {
   };
 
   const renderItem = ({ item }) => {
-    // Eğer resim URL'si yoksa renkli bir arka plan oluşturalım
     const hasImage = item.thumbnail && item.thumbnail.length > 0;
     const hue = (item.id * 10) % 360;
     const bgStyle = hasImage ? {} : { backgroundColor: `hsl(${hue}, 80%, 70%)` };
     
-    // Oyunun başlığına ve açıklamasına göre kategori belirleme
     const title = item.title ? item.title.toLowerCase() : '';
     const description = item.description ? item.description.toLowerCase() : '';
     
-    // Oyun favori listesinde mi kontrol et
     const isFavorited = favoriteGames.some(game => game.id === item.id);
     
-    // Kategorileri belirlemek için anahtar kelimeler
     const categoryKeywords = {
       'action': ['action', 'battle', 'fight', 'shooter', 'gun', 'warrior', 'combat'],
       'puzzle': ['puzzle', 'match', 'brain', 'logic', 'solve', 'connect', 'tetris'],
@@ -126,10 +128,8 @@ export function HomeScreen() {
       'quiz': ['quiz', 'question', 'trivia', 'knowledge', 'answer']
     };
     
-    // Kategori belirleme
     let foundCategory = null;
     
-    // Oyun başlığı ve açıklamasındaki anahtar kelimelere göre kategori belirleme
     Object.keys(categoryKeywords).forEach(category => {
       const keywords = categoryKeywords[category];
       for (const keyword of keywords) {
@@ -141,7 +141,6 @@ export function HomeScreen() {
       }
     });
     
-    // Eğer kategorize edemediyse oyuna göre özel kurallar
     if (!foundCategory) {
       if (item.id % 5 === 0) foundCategory = 'arcade';
       else if (item.id % 5 === 1) foundCategory = 'action';
@@ -173,8 +172,6 @@ export function HomeScreen() {
           </View>
         )}
         
-
-        
         <View style={styles.gameInfo}>
           <Text style={styles.gameTitle} numberOfLines={2}>{item.title}</Text>
           
@@ -199,17 +196,13 @@ export function HomeScreen() {
                 style={[styles.favoriteButton, isFavorited && styles.favoriteButtonActive]}
                 onPress={async () => {
                   if (isFavorited) {
-                    // Remove from favorites
                     const success = await removeFromFavorites(item.id);
                     if (success) {
-                      // Update favorites list
                       setFavoriteGames(favoriteGames.filter(game => game.id !== item.id));
                     }
                   } else {
-                    // Add to favorites
                     const success = await addToFavorites(item);
                     if (success) {
-                      // Update favorites list
                       setFavoriteGames([...favoriteGames, item]);
                     }
                   }
@@ -243,6 +236,16 @@ export function HomeScreen() {
       <StatusBar backgroundColor="#ff7979" barStyle="light-content" />
 
       {renderHeader()}
+
+      <View style={styles.bannerContainer}>
+        <BannerAd
+          unitId={ADMOB_IDS.BANNER}
+          size={BannerAdSize.BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+        />
+      </View>
 
       <FlatList
         contentContainerStyle={styles.list}
@@ -282,7 +285,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa"
   },
-  // Şık header stilleri
   header: {
     width: '100%',
     height: 150,
@@ -366,12 +368,10 @@ const styles = StyleSheet.create({
     top: 20,
     left: -20,
   },
-  // Liste stili
   list: {
     padding: 8,
-    paddingBottom: 70 // Alt tablar için boşluk bırak
+    paddingBottom: 70
   },
-  // Oyun kartı
   gameCard: {
     flex: 1,
     margin: 8,
@@ -383,22 +383,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    // Esnek genişlik: Küçük ekranlarda da uyumlu
     width: '45%',
     minWidth: 140,
     maxWidth: Dimensions.get("window").width / 2 - 16,
-    // Esnek yükseklik: Ekran yüksekliğine göre değişir
     height: Dimensions.get("window").height > 700 ? 180 : 160
   },
   gameImage: {
     width: "100%",
-    // Ekran boyutuna göre uyarlanmış yükseklik
     height: Dimensions.get("window").height > 700 ? 140 : 120,
     backgroundColor: "#e0e0e0"
   },
   gamePlaceholder: {
     width: "100%",
-    // Ekran boyutuna göre uyarlanmış yükseklik
     height: Dimensions.get("window").height > 700 ? 140 : 120,
     justifyContent: "center",
     alignItems: "center",
@@ -409,7 +405,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff"
   },
-
   gameInfo: {
     padding: 12
   },
@@ -470,7 +465,6 @@ const styles = StyleSheet.create({
   favoriteButtonIcon: {
     fontSize: 12,
   },
-  // Loader ve boş durum
   loaderStyle: {
     marginVertical: 16,
     alignItems: "center"
@@ -486,5 +480,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center"
-  }
+  },
+  bannerContainer: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 5,
+    marginBottom: 5,
+  },
 });
