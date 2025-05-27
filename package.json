@@ -2,7 +2,6 @@
   "dependencies": {
     "@react-native-admob/admob": "^2.0.1",
     "@react-native-firebase/app": "^18.7.3",
-    "@react-native-firebase/admob": "^18.7.3",
     "react-native-google-mobile-ads": "^12.10.0"
   }
 }
