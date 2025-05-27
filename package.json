@@ -3,5 +3,8 @@
     "@react-native-admob/admob": "^2.0.1",
     "@react-native-firebase/app": "^18.7.3",
     "react-native-google-mobile-ads": "^12.10.0"
+  },
+  "scripts": {
+    "build": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res"
   }
 }
